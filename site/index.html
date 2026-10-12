@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Voile — masquer vos données avant de les confier à une IA</title>
+<meta name="description" content="Remplacez noms, e-mails, téléphones et identifiants par des codes avant d’envoyer un fichier à une IA, puis restituez les vraies valeurs. Tout se passe dans votre navigateur.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="brand">Voile</span>
+    <div class="tabs" role="tablist" aria-label="Que voulez-vous faire ?">
+      <button class="tab" role="tab" id="tab-masquer" aria-controls="panel-masquer" aria-selected="true">Masquer un fichier</button>
+      <button class="tab" role="tab" id="tab-restituer" aria-controls="panel-restituer" aria-selected="false" tabindex="-1">Restituer la réponse</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <h1>Utilisez l’IA sans exposer vos clients.</h1>
+    <p class="lead">Voile remplace les noms, e-mails, téléphones et identifiants de votre fichier par des codes, avant que vous le confiiez à Claude, ChatGPT ou Gemini. Quand la réponse revient, il remet les vraies valeurs. Tout se passe dans votre navigateur.</p>
+
+    <div class="demo" id="demo" data-etat="original">
+      <p class="demo-text" aria-live="polite">Relancer
+        <span class="secret"><span class="orig">Jean Dupont</span><span class="tok">PERSONNE_001</span></span>
+        (<span class="secret"><span class="orig">jean.dupont@acme.fr</span><span class="tok">EMAIL_001</span></span>,
+        <span class="secret"><span class="orig">06 12 34 56 78</span><span class="tok">TEL_001</span></span>)
+        avant vendredi.</p>
+      <div class="seg" role="group" aria-label="Choisir la version affichée">
+        <button type="button" data-etat="original" aria-pressed="true">Votre fichier</button>
+        <button type="button" data-etat="jeton" aria-pressed="false">Ce que reçoit l’IA</button>
+      </div>
+    </div>
+
+    <details class="confiance">
+      <summary>Comment vérifier que rien ne sort de votre ordinateur ?</summary>
+      <ul>
+        <li>Il n’y a ni serveur, ni compte, ni cookie, ni statistiques : la page ne contient aucun code qui envoie des données.</li>
+        <li>Votre navigateur l’impose : la page déclare une politique de sécurité qui bloque toute connexion sortante.</li>
+        <li>Test simple : chargez cette page, coupez le Wi-Fi, déposez un fichier. Ça fonctionne, donc rien ne sort.</li>
+        <li>Le code est ouvert et auditable, et une version à enregistrer sur votre poste (un seul fichier) est proposée en téléchargement.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- ============ MASQUER ============ -->
+  <div class="panel" id="panel-masquer" role="tabpanel" aria-labelledby="tab-masquer">
+
+    <section class="etape" id="m1">
+      <div class="n" aria-hidden="true">1</div>
+      <div>
+        <h2>Déposez votre fichier</h2>
+        <label class="drop" id="m-drop">
+          <input type="file" id="m-file" accept=".csv,.tsv,.txt,.md,.json,.xlsx">
+          <strong>Glissez un fichier ici, ou cliquez pour le choisir</strong>
+          <span class="muted">CSV, TSV, TXT, MD, JSON ou Excel (.xlsx). Jusqu’à 25 Mo.</span>
+        </label>
+        <details class="alt">
+          <summary>Ou collez un texte</summary>
+          <p class="muted">Utile pour un e-mail, un compte rendu ou une réponse à rédiger.</p>
+          <textarea id="m-paste" spellcheck="false" aria-label="Texte à masquer"></textarea>
+          <div class="row"><button type="button" class="btn second" id="m-paste-go">Utiliser ce texte</button></div>
+        </details>
+        <div id="m-error" class="alerte" role="alert" hidden></div>
+      </div>
+    </section>
+
+    <section class="etape" id="m2" hidden>
+      <div class="n" aria-hidden="true">2</div>
+      <div>
+        <h2>Vérifiez ce qui sera masqué</h2>
+        <p id="m2-intro"></p>
+        <div class="scroll" id="cols-main"></div>
+        <details class="autres" id="cols-other-wrap">
+          <summary id="cols-other-title"></summary>
+          <p class="muted">Cochez les colonnes qui contiennent aussi des données sur des personnes.</p>
+          <div class="scroll" id="cols-other"></div>
+        </details>
+        <div class="options">
+          <div>
+            <label class="l" for="m-terms">Autres mots à masquer dans les textes libres</label>
+            <p class="muted">Un par ligne : noms de clients, de projets, de lieux… Ils seront remplacés partout où ils apparaissent dans les colonnes de texte libre.</p>
+            <textarea id="m-terms" spellcheck="false"></textarea>
+          </div>
+          <label class="check"><input type="checkbox" id="m-loose"><span>Regrouper les variantes d’écriture (« Dupont », « DUPONT », « dupont » partagent un code). À la restitution, la première forme rencontrée sera reprise.</span></label>
+        </div>
+        <div class="row"><button type="button" class="btn" id="m-run">Masquer mes données</button></div>
+      </div>
+    </section>
+
+    <section class="etape" id="m3" hidden>
+      <div class="n" aria-hidden="true">3</div>
+      <div>
+        <h2>Contrôlez le résultat</h2>
+        <div id="m3-body"></div>
+      </div>
+    </section>
+
+    <section class="etape" id="m4" hidden>
+      <div class="n" aria-hidden="true">4</div>
+      <div>
+        <h2>Enregistrez la clé, puis le fichier masqué</h2>
+        <p>La clé contient la correspondance entre les codes et les vraies valeurs. Elle est chiffrée avec votre phrase de passe. Sans elle, personne ne peut remettre les vrais noms, vous non plus.</p>
+        <div class="field">
+          <label for="m-pass">Phrase de passe</label>
+          <div class="pass">
+            <input type="text" id="m-pass" autocomplete="off" spellcheck="false" aria-describedby="m-pass-help">
+            <button type="button" class="btn second" id="m-gen">Générer</button>
+          </div>
+          <p class="muted" id="m-pass-help">16 caractères ou plus. Conservez-la dans votre gestionnaire de mots de passe : elle n’est enregistrée nulle part.</p>
+        </div>
+        <label class="check"><input type="checkbox" id="m-ack"><span>J’ai noté ma phrase de passe et je conserverai le fichier clé.</span></label>
+        <div class="row">
+          <button type="button" class="btn" id="m-dl-key" disabled>Télécharger la clé</button>
+          <button type="button" class="btn" id="m-dl-file" disabled>Télécharger le fichier masqué</button>
+          <button type="button" class="btn second" id="m-reset">Tout effacer</button>
+        </div>
+        <p class="muted" id="m4-status" role="status"></p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ RESTITUER ============ -->
+  <div class="panel" id="panel-restituer" role="tabpanel" aria-labelledby="tab-restituer" hidden>
+
+    <section class="etape" id="r1">
+      <div class="n" aria-hidden="true">1</div>
+      <div>
+        <h2>Ouvrez votre clé</h2>
+        <label class="drop" id="r-key-drop">
+          <input type="file" id="r-key" accept=".voile,.json">
+          <strong>Glissez votre fichier clé ici, ou cliquez pour le choisir</strong>
+          <span class="muted">Le fichier .voile enregistré lors du masquage.</span>
+        </label>
+        <div class="field">
+          <label for="r-pass">Phrase de passe</label>
+          <input type="password" id="r-pass" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="row"><button type="button" class="btn" id="r-unlock">Ouvrir la clé</button></div>
+        <div id="r1-msg" role="status"></div>
+      </div>
+    </section>
+
+    <section class="etape" id="r2" hidden>
+      <div class="n" aria-hidden="true">2</div>
+      <div>
+        <h2>Déposez le fichier revenu de l’IA</h2>
+        <label class="drop" id="r-drop">
+          <input type="file" id="r-file" accept=".csv,.tsv,.txt,.md,.json,.xlsx,.html,.xml">
+          <strong>Glissez le fichier ici, ou cliquez pour le choisir</strong>
+          <span class="muted">Les codes comme PERSONNE_001 seront remplacés par les vraies valeurs.</span>
+        </label>
+        <details class="alt">
+          <summary>Ou collez la réponse</summary>
+          <textarea id="r-paste" spellcheck="false" aria-label="Réponse de l’IA à restituer"></textarea>
+          <div class="row"><button type="button" class="btn second" id="r-paste-go">Restituer ce texte</button></div>
+        </details>
+        <div id="r2-error" class="alerte" role="alert" hidden></div>
+      </div>
+    </section>
+
+    <section class="etape" id="r3" hidden>
+      <div class="n" aria-hidden="true">3</div>
+      <div>
+        <h2>Récupérez le résultat</h2>
+        <div id="r3-body"></div>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p><strong>Voile pseudonymise, il n’anonymise pas.</strong> Il réduit le risque sans l’éliminer. Tant que vous gardez la clé, les données restent des données personnelles au sens du RGPD. Il ne repère que ce qui a une forme reconnaissable (e-mails, téléphones, IBAN…) et les noms que vous lui indiquez : relisez toujours l’aperçu avant d’envoyer un fichier à un outil d’IA.</p>
+    <p>Voile est un logiciel libre sous licence MIT, fourni sans garantie.</p>
+  </div>
+</footer>
+
+<script src="voile.js" defer></script>
+</body>
+</html>

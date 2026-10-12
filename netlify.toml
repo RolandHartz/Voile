@@ -1,0 +1,7 @@
+# Voile — déploiement Netlify. Le dossier publié est site/ ; l'en-tête CSP vient de site/_headers (généré par build.mjs).
+[build]
+  command = "node build.mjs"
+  publish = "site"
+
+[build.environment]
+  NODE_VERSION = "22"

@@ -1,0 +1,16 @@
+{
+  "name": "voile",
+  "version": "0.1.0",
+  "description": "Pseudonymisez vos fichiers avant de les confier à une IA — tout se passe dans le navigateur.",
+  "license": "MIT",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/core.test.js test/xlsx.test.js",
+    "test:ui": "node --test test/ui.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}
